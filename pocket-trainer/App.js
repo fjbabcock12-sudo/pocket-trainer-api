@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { View, ActivityIndicator, StyleSheet } from 'react-native'
-import { NavigationContainer } from '@react-navigation/native'
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { createClient } from '@supabase/supabase-js'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config/config'
@@ -14,12 +12,82 @@ import NutritionScreen from './screens/NutritionScreen'
 import ProfileScreen from './screens/ProfileScreen'
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-const Tab = createBottomTabNavigator()
+
+const TABS = [
+  { name: 'Chat',      icon: 'chatbubble',  iconOff: 'chatbubble-outline' },
+  { name: 'Training',  icon: 'barbell',     iconOff: 'barbell-outline' },
+  { name: 'Nutrition', icon: 'nutrition',   iconOff: 'nutrition-outline' },
+  { name: 'Profile',   icon: 'person',      iconOff: 'person-outline' },
+]
+
+function Sidebar({ active, onSelect, theme }) {
+  const s = sidebarStyles(theme)
+  return (
+    <View style={s.sidebar}>
+      <Text style={s.logo}>PT</Text>
+      <View style={s.nav}>
+        {TABS.map(tab => {
+          const isActive = active === tab.name
+          return (
+            <TouchableOpacity
+              key={tab.name}
+              style={[s.navItem, isActive && s.navItemActive]}
+              onPress={() => onSelect(tab.name)}
+            >
+              <Ionicons
+                name={isActive ? tab.icon : tab.iconOff}
+                size={20}
+                color={isActive ? theme.accent : theme.subtext}
+              />
+              <Text style={[s.navLabel, isActive && s.navLabelActive]}>
+                {tab.name}
+              </Text>
+            </TouchableOpacity>
+          )
+        })}
+      </View>
+    </View>
+  )
+}
+
+function sidebarStyles(t) {
+  return StyleSheet.create({
+    sidebar: {
+      width: 200,
+      backgroundColor: t.card,
+      borderRightWidth: 1,
+      borderRightColor: t.cardBorder,
+      paddingTop: 24,
+      paddingHorizontal: 12,
+      paddingBottom: 24,
+    },
+    logo: {
+      fontSize: 20,
+      fontWeight: '800',
+      color: t.accent,
+      paddingHorizontal: 12,
+      marginBottom: 32,
+    },
+    nav: { gap: 4 },
+    navItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+    },
+    navItemActive: { backgroundColor: t.rowAlt },
+    navLabel: { fontSize: 14, color: t.subtext, fontWeight: '500' },
+    navLabelActive: { color: t.accent, fontWeight: '600' },
+  })
+}
 
 function Main() {
   const { theme } = useTheme()
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('Chat')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -39,45 +107,18 @@ function Main() {
     )
   }
 
-  if (!session) {
-    return <AuthScreen onAuth={setSession} />
-  }
+  if (!session) return <AuthScreen onAuth={setSession} />
 
   return (
-    <NavigationContainer>
-      <Tab.Navigator
-        screenOptions={({ route }) => ({
-          tabBarIcon: ({ focused, color, size }) => {
-            const icons = {
-              Chat: focused ? 'chatbubble' : 'chatbubble-outline',
-              Training: focused ? 'barbell' : 'barbell-outline',
-              Nutrition: focused ? 'nutrition' : 'nutrition-outline',
-              Profile: focused ? 'person' : 'person-outline',
-            }
-            return <Ionicons name={icons[route.name]} size={size} color={color} />
-          },
-          tabBarActiveTintColor: theme.accent,
-          tabBarInactiveTintColor: theme.subtext,
-          tabBarStyle: { backgroundColor: theme.tabBar, borderTopColor: theme.tabBorder },
-          headerStyle: { backgroundColor: theme.header },
-          headerTintColor: theme.headerText,
-          headerTitleStyle: { fontWeight: '700' },
-        })}
-      >
-        <Tab.Screen name="Chat" options={{ headerShown: false }}>
-          {() => <ChatScreen session={session} />}
-        </Tab.Screen>
-        <Tab.Screen name="Training">
-          {() => <TrainingScreen session={session} />}
-        </Tab.Screen>
-        <Tab.Screen name="Nutrition">
-          {() => <NutritionScreen session={session} />}
-        </Tab.Screen>
-        <Tab.Screen name="Profile">
-          {() => <ProfileScreen session={session} />}
-        </Tab.Screen>
-      </Tab.Navigator>
-    </NavigationContainer>
+    <View style={[styles.root, { backgroundColor: theme.bg }]}>
+      <Sidebar active={activeTab} onSelect={setActiveTab} theme={theme} />
+      <View style={styles.content}>
+        {activeTab === 'Chat'      && <ChatScreen session={session} />}
+        {activeTab === 'Training'  && <TrainingScreen session={session} />}
+        {activeTab === 'Nutrition' && <NutritionScreen session={session} />}
+        {activeTab === 'Profile'   && <ProfileScreen session={session} />}
+      </View>
+    </View>
   )
 }
 
@@ -91,4 +132,6 @@ export default function App() {
 
 const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  root: { flex: 1, flexDirection: 'row' },
+  content: { flex: 1 },
 })

@@ -25,9 +25,9 @@ function timeAgo(dateStr) {
 
 export default function ChatScreen({ session }) {
   const { theme } = useTheme()
-  const [view, setView] = useState('loading') // 'loading' | 'home' | 'chat'
+  const [view, setView] = useState('loading')
   const [conversations, setConversations] = useState([])
-  const [activeConv, setActiveConv] = useState(null) // { id, title, messages }
+  const [activeConv, setActiveConv] = useState(null)
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [displayName, setDisplayName] = useState('')
@@ -53,7 +53,6 @@ export default function ChatScreen({ session }) {
     }
 
     if (convs.length > 0) {
-      // Returning user — auto-open most recent conversation
       await openConversation(convs[0])
     } else {
       setView('home')
@@ -82,7 +81,6 @@ export default function ChatScreen({ session }) {
     const tempUserMsg = { role: 'user', content: text, id: `tmp-${Date.now()}` }
 
     if (view === 'home') {
-      // Starting a new conversation from home screen
       setActiveConv({ id: null, title: text.slice(0, 60), messages: [tempUserMsg] })
       setView('chat')
     } else {
@@ -103,13 +101,8 @@ export default function ChatScreen({ session }) {
         id: `tmp-${Date.now() + 1}`,
       }
 
-      setActiveConv(prev => ({
-        ...prev,
-        id: convId,
-        messages: [...prev.messages, assistantMsg],
-      }))
+      setActiveConv(prev => ({ ...prev, id: convId, messages: [...prev.messages, assistantMsg] }))
 
-      // Refresh conversation list
       const convRes = await axios.get(`${API_URL}/api/chat/conversations`, {
         headers: { Authorization: `Bearer ${session.access_token}` }
       })
@@ -122,20 +115,11 @@ export default function ChatScreen({ session }) {
       }
     } catch (err) {
       Alert.alert('Error', 'Could not send message.')
-      setActiveConv(prev => ({
-        ...prev,
-        messages: prev.messages.slice(0, -1),
-      }))
+      setActiveConv(prev => ({ ...prev, messages: prev.messages.slice(0, -1) }))
       setInput(text)
     }
 
     setSending(false)
-  }
-
-  async function startNewChat() {
-    setActiveConv(null)
-    setView('home')
-    setInput('')
   }
 
   const s = makeStyles(theme)
@@ -154,20 +138,16 @@ export default function ChatScreen({ session }) {
       <KeyboardAvoidingView
         style={s.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={90}
+        keyboardVerticalOffset={0}
       >
-        {/* Header */}
         <View style={s.chatHeader}>
-          <TouchableOpacity onPress={startNewChat} style={s.backBtn}>
+          <TouchableOpacity onPress={() => { setActiveConv(null); setView('home') }} style={s.backBtn}>
             <Text style={s.backBtnText}>←</Text>
           </TouchableOpacity>
-          <Text style={s.chatTitle} numberOfLines={1}>
-            {activeConv?.title || 'New chat'}
-          </Text>
+          <Text style={s.chatTitle} numberOfLines={1}>{activeConv?.title || 'New chat'}</Text>
           <View style={{ width: 36 }} />
         </View>
 
-        {/* Messages */}
         <FlatList
           ref={flatListRef}
           data={activeConv?.messages || []}
@@ -224,67 +204,57 @@ export default function ChatScreen({ session }) {
   }
 
   // ── Home view ──────────────────────────────────────────
-  const isFirstTime = conversations.length === 0
-
   return (
-    <KeyboardAvoidingView
-      style={s.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={90}
-    >
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={isFirstTime ? s.homeFirstTime : s.homeReturning}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Text style={s.greeting}>{getGreeting(displayName)}</Text>
+    <View style={s.container}>
+      {/* Conversation list — scrollable top section */}
+      {conversations.length > 0 && (
+        <ScrollView style={s.convList} contentContainerStyle={s.convListContent}>
+          <Text style={s.convListLabel}>Recent chats</Text>
+          {conversations.map(conv => (
+            <TouchableOpacity
+              key={conv.id}
+              style={s.convCard}
+              onPress={() => openConversation(conv)}
+              activeOpacity={0.7}
+            >
+              <Text style={s.convTitle} numberOfLines={1}>{conv.title}</Text>
+              <Text style={s.convTime}>{timeAgo(conv.updated_at)}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
 
-        {isFirstTime ? (
+      {/* Centered greeting + input */}
+      <View style={s.homeCenter}>
+        <View style={s.homeContent}>
+          <Text style={s.greeting}>{getGreeting(displayName)}</Text>
           <Text style={s.description}>
-            Pocket Trainer is your AI-powered personal fitness coach. Describe your workouts,
-            meals, and body stats in plain language and your trainer will log them automatically.
-            Share your goals, ask for training or meal plans, or check in on your progress anytime.
-            The more context you provide — your current weight, fitness goals, and dietary
-            preferences — the more tailored your experience will be.
+            {conversations.length === 0
+              ? "Pocket Trainer is your AI-powered personal fitness coach. Describe your workouts, meals, and body stats in plain language and your trainer will log them automatically. Share your goals, ask for training or meal plans, or check in on your progress anytime."
+              : "What would you like to work on today?"}
           </Text>
-        ) : (
-          <>
-            <Text style={s.sectionLabel}>Recent chats</Text>
-            {conversations.map(conv => (
-              <TouchableOpacity
-                key={conv.id}
-                style={s.convCard}
-                onPress={() => openConversation(conv)}
-                activeOpacity={0.7}
-              >
-                <Text style={s.convTitle} numberOfLines={1}>{conv.title}</Text>
-                <Text style={s.convTime}>{timeAgo(conv.updated_at)}</Text>
-              </TouchableOpacity>
-            ))}
-          </>
-        )}
-      </ScrollView>
-
-      <View style={s.inputRow}>
-        <TextInput
-          style={s.input}
-          placeholder={isFirstTime ? "Start chatting with your trainer..." : "Start a new chat..."}
-          placeholderTextColor={theme.placeholder}
-          value={input}
-          onChangeText={setInput}
-          multiline
-          maxLength={1000}
-          onSubmitEditing={sendMessage}
-        />
-        <TouchableOpacity
-          style={[s.sendBtn, (!input.trim() || sending) && s.sendDisabled]}
-          onPress={sendMessage}
-          disabled={!input.trim() || sending}
-        >
-          <Text style={s.sendText}>↑</Text>
-        </TouchableOpacity>
+          <View style={s.homeInputRow}>
+            <TextInput
+              style={s.homeInput}
+              placeholder={conversations.length === 0 ? "Start chatting with your trainer..." : "Start a new chat..."}
+              placeholderTextColor={theme.placeholder}
+              value={input}
+              onChangeText={setInput}
+              multiline
+              maxLength={1000}
+              onSubmitEditing={sendMessage}
+            />
+            <TouchableOpacity
+              style={[s.sendBtn, (!input.trim() || sending) && s.sendDisabled]}
+              onPress={sendMessage}
+              disabled={!input.trim() || sending}
+            >
+              <Text style={s.sendText}>↑</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   )
 }
 
@@ -293,12 +263,40 @@ function makeStyles(t) {
     container: { flex: 1, backgroundColor: t.bg },
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: t.bg },
 
+    // Conversation list (top of home)
+    convList: { maxHeight: 220, borderBottomWidth: 1, borderBottomColor: t.divider },
+    convListContent: { padding: 16, gap: 8 },
+    convListLabel: { fontSize: 11, fontWeight: '600', color: t.muted, textTransform: 'uppercase', marginBottom: 4 },
+    convCard: {
+      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+      backgroundColor: t.card, borderRadius: 10, padding: 12,
+      borderWidth: 1, borderColor: t.cardBorder,
+    },
+    convTitle: { flex: 1, fontSize: 14, color: t.text, fontWeight: '500', marginRight: 12 },
+    convTime: { fontSize: 12, color: t.muted },
+
+    // Home centered section
+    homeCenter: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+    homeContent: { width: '100%', maxWidth: 580, alignItems: 'center' },
+    greeting: { fontSize: 28, fontWeight: '700', color: t.text, marginBottom: 12, textAlign: 'center' },
+    description: { fontSize: 15, color: t.subtext, lineHeight: 24, textAlign: 'center', marginBottom: 28 },
+    homeInputRow: {
+      flexDirection: 'row', gap: 8, alignItems: 'flex-end',
+      width: '100%',
+      backgroundColor: t.inputBg, borderRadius: 16,
+      borderWidth: 1, borderColor: t.inputBorder,
+      paddingHorizontal: 16, paddingVertical: 8,
+    },
+    homeInput: {
+      flex: 1, color: t.text, fontSize: 15,
+      maxHeight: 120, paddingVertical: 4,
+    },
+
     // Chat view
     chatHeader: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
       paddingHorizontal: 16, paddingVertical: 12,
       borderBottomWidth: 1, borderBottomColor: t.divider,
-      backgroundColor: t.bg,
     },
     backBtn: { width: 36, height: 36, justifyContent: 'center' },
     backBtnText: { fontSize: 22, color: t.accent },
@@ -309,8 +307,7 @@ function makeStyles(t) {
     assistantRow: { justifyContent: 'flex-start' },
     avatar: {
       width: 32, height: 32, borderRadius: 16,
-      backgroundColor: t.accent, justifyContent: 'center',
-      alignItems: 'center', marginRight: 8,
+      backgroundColor: t.accent, justifyContent: 'center', alignItems: 'center', marginRight: 8,
     },
     avatarText: { color: '#fff', fontSize: 11, fontWeight: '700' },
     bubble: { maxWidth: '75%', borderRadius: 18, padding: 12 },
@@ -324,31 +321,9 @@ function makeStyles(t) {
       paddingHorizontal: 16, paddingBottom: 8, gap: 8,
     },
     typingText: { color: t.muted, fontSize: 13 },
-
-    // Home view
-    homeFirstTime: {
-      flexGrow: 1, justifyContent: 'center',
-      paddingHorizontal: 32, paddingBottom: 24,
-    },
-    homeReturning: {
-      flexGrow: 1, paddingHorizontal: 20, paddingTop: 32, paddingBottom: 16,
-    },
-    greeting: { fontSize: 26, fontWeight: '700', color: t.text, marginBottom: 12, textAlign: 'center' },
-    description: { fontSize: 15, color: t.subtext, lineHeight: 24, textAlign: 'center' },
-    sectionLabel: { fontSize: 13, fontWeight: '600', color: t.muted, textTransform: 'uppercase', marginBottom: 12, marginTop: 4 },
-    convCard: {
-      backgroundColor: t.card, borderRadius: 12, padding: 14,
-      marginBottom: 8, borderWidth: 1, borderColor: t.cardBorder,
-      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    },
-    convTitle: { flex: 1, fontSize: 15, color: t.text, fontWeight: '500', marginRight: 12 },
-    convTime: { fontSize: 12, color: t.muted },
-
-    // Shared input
     inputRow: {
       flexDirection: 'row', padding: 12, gap: 8,
       borderTopWidth: 1, borderTopColor: t.divider, alignItems: 'flex-end',
-      backgroundColor: t.bg,
     },
     input: {
       flex: 1, backgroundColor: t.inputBg, color: t.text, borderRadius: 20,
