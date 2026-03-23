@@ -5,6 +5,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { Ionicons } from '@expo/vector-icons'
 import { createClient } from '@supabase/supabase-js'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config/config'
+import { ThemeProvider, useTheme } from './context/ThemeContext'
 
 import AuthScreen from './screens/AuthScreen'
 import ChatScreen from './screens/ChatScreen'
@@ -15,7 +16,8 @@ import ProfileScreen from './screens/ProfileScreen'
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 const Tab = createBottomTabNavigator()
 
-export default function App() {
+function Main() {
+  const { theme } = useTheme()
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -31,8 +33,8 @@ export default function App() {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator color="#6C47FF" size="large" />
+      <View style={[styles.centered, { backgroundColor: theme.bg }]}>
+        <ActivityIndicator color={theme.accent} size="large" />
       </View>
     )
   }
@@ -54,11 +56,11 @@ export default function App() {
             }
             return <Ionicons name={icons[route.name]} size={size} color={color} />
           },
-          tabBarActiveTintColor: '#6C47FF',
-          tabBarInactiveTintColor: '#555',
-          tabBarStyle: { backgroundColor: '#000', borderTopColor: '#111' },
-          headerStyle: { backgroundColor: '#000' },
-          headerTintColor: '#fff',
+          tabBarActiveTintColor: theme.accent,
+          tabBarInactiveTintColor: theme.subtext,
+          tabBarStyle: { backgroundColor: theme.tabBar, borderTopColor: theme.tabBorder },
+          headerStyle: { backgroundColor: theme.header },
+          headerTintColor: theme.headerText,
           headerTitleStyle: { fontWeight: '700' },
         })}
       >
@@ -79,6 +81,14 @@ export default function App() {
   )
 }
 
+export default function App() {
+  return (
+    <ThemeProvider>
+      <Main />
+    </ThemeProvider>
+  )
+}
+
 const styles = StyleSheet.create({
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 })

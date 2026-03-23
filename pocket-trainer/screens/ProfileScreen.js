@@ -7,10 +7,12 @@ import axios from 'axios'
 import { API_URL } from '../config/config'
 import { createClient } from '@supabase/supabase-js'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config/config'
+import { useTheme } from '../context/ThemeContext'
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 export default function ProfileScreen({ session }) {
+  const { theme, toggleTheme } = useTheme()
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -68,129 +70,142 @@ export default function ProfileScreen({ session }) {
     ])
   }
 
+  const s = makeStyles(theme)
+
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator color="#6C47FF" size="large" />
+      <View style={s.centered}>
+        <ActivityIndicator color={theme.accent} size="large" />
       </View>
     )
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.heading}>Profile</Text>
+    <ScrollView style={s.container} contentContainerStyle={s.content}>
+      <Text style={s.heading}>Profile</Text>
 
-      {/* Avatar placeholder */}
-      <View style={styles.avatarContainer}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
+      <View style={s.avatarContainer}>
+        <View style={s.avatar}>
+          <Text style={s.avatarText}>
             {displayName ? displayName[0].toUpperCase() : '?'}
           </Text>
         </View>
-        <Text style={styles.email}>{session.user.email}</Text>
+        <Text style={s.email}>{session.user.email}</Text>
       </View>
 
-      {/* Account type toggle */}
-      <View style={styles.card}>
-        <View style={styles.toggleRow}>
+      {/* Appearance + account toggles */}
+      <View style={s.card}>
+        <View style={s.toggleRow}>
           <View>
-            <Text style={styles.toggleLabel}>Public profile</Text>
-            <Text style={styles.toggleSub}>
+            <Text style={s.toggleLabel}>Dark mode</Text>
+            <Text style={s.toggleSub}>Switch to a softer dark theme</Text>
+          </View>
+          <Switch
+            value={theme.dark}
+            onValueChange={toggleTheme}
+            trackColor={{ false: t => t.divider, true: theme.accent }}
+            thumbColor="#fff"
+          />
+        </View>
+        <View style={s.cardDivider} />
+        <View style={s.toggleRow}>
+          <View>
+            <Text style={s.toggleLabel}>Public profile</Text>
+            <Text style={s.toggleSub}>
               {isPublic ? 'Anyone can find and follow you' : 'Only approved followers can see you'}
             </Text>
           </View>
           <Switch
             value={isPublic}
             onValueChange={setIsPublic}
-            trackColor={{ false: '#222', true: '#6C47FF' }}
+            trackColor={{ false: theme.divider, true: theme.accent }}
             thumbColor="#fff"
           />
         </View>
       </View>
 
-      {/* Fields */}
-      <Text style={styles.sectionTitle}>About you</Text>
-      <View style={styles.card}>
-        <Text style={styles.fieldLabel}>Display name</Text>
+      <Text style={s.sectionTitle}>About you</Text>
+      <View style={s.card}>
+        <Text style={s.fieldLabel}>Display name</Text>
         <TextInput
-          style={styles.input}
+          style={s.input}
           value={displayName}
           onChangeText={setDisplayName}
           placeholder="Your name"
-          placeholderTextColor="#555"
+          placeholderTextColor={theme.placeholder}
+          color={theme.text}
         />
-        <Text style={styles.fieldLabel}>Bio</Text>
+        <Text style={s.fieldLabel}>Bio</Text>
         <TextInput
-          style={[styles.input, styles.textArea]}
+          style={[s.input, s.textArea]}
           value={bio}
           onChangeText={setBio}
           placeholder="Tell your trainer about yourself..."
-          placeholderTextColor="#555"
+          placeholderTextColor={theme.placeholder}
+          color={theme.text}
           multiline
           numberOfLines={3}
         />
-        <Text style={styles.fieldLabel}>Height (cm)</Text>
+        <Text style={s.fieldLabel}>Height (cm)</Text>
         <TextInput
-          style={styles.input}
+          style={s.input}
           value={height}
           onChangeText={setHeight}
           placeholder="e.g. 178"
-          placeholderTextColor="#555"
+          placeholderTextColor={theme.placeholder}
+          color={theme.text}
           keyboardType="numeric"
         />
       </View>
 
-      <TouchableOpacity
-        style={styles.saveButton}
-        onPress={saveProfile}
-        disabled={saving}
-      >
-        <Text style={styles.saveButtonText}>
-          {saving ? 'Saving...' : 'Save profile'}
-        </Text>
+      <TouchableOpacity style={s.saveButton} onPress={saveProfile} disabled={saving}>
+        <Text style={s.saveButtonText}>{saving ? 'Saving...' : 'Save profile'}</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-        <Text style={styles.signOutText}>Sign out</Text>
+      <TouchableOpacity style={s.signOutButton} onPress={handleSignOut}>
+        <Text style={s.signOutText}>Sign out</Text>
       </TouchableOpacity>
     </ScrollView>
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
-  content: { padding: 20, paddingBottom: 60 },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' },
-  heading: { fontSize: 28, fontWeight: '700', color: '#fff', marginBottom: 24 },
-  avatarContainer: { alignItems: 'center', marginBottom: 32 },
-  avatar: {
-    width: 80, height: 80, borderRadius: 40,
-    backgroundColor: '#6C47FF', justifyContent: 'center', alignItems: 'center', marginBottom: 12
-  },
-  avatarText: { color: '#fff', fontSize: 32, fontWeight: '700' },
-  email: { color: '#888', fontSize: 14 },
-  card: {
-    backgroundColor: '#111', borderRadius: 12, padding: 16,
-    borderWidth: 1, borderColor: '#222', marginBottom: 16
-  },
-  toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  toggleLabel: { color: '#fff', fontSize: 15, fontWeight: '600', marginBottom: 4 },
-  toggleSub: { color: '#888', fontSize: 13, maxWidth: 220 },
-  sectionTitle: { fontSize: 16, fontWeight: '600', color: '#888', marginBottom: 12 },
-  fieldLabel: { color: '#888', fontSize: 13, marginBottom: 6, marginTop: 12 },
-  input: {
-    backgroundColor: '#1a1a1a', color: '#fff', borderRadius: 8,
-    padding: 12, fontSize: 15, borderWidth: 1, borderColor: '#333'
-  },
-  textArea: { height: 80, textAlignVertical: 'top' },
-  saveButton: {
-    backgroundColor: '#6C47FF', borderRadius: 12,
-    padding: 16, alignItems: 'center', marginBottom: 12
-  },
-  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  signOutButton: {
-    borderRadius: 12, padding: 16, alignItems: 'center',
-    borderWidth: 1, borderColor: '#333'
-  },
-  signOutText: { color: '#FF6B6B', fontSize: 16 }
-})
+function makeStyles(t) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: t.bg },
+    content: { padding: 20, paddingBottom: 60 },
+    centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: t.bg },
+    heading: { fontSize: 28, fontWeight: '700', color: t.text, marginBottom: 24 },
+    avatarContainer: { alignItems: 'center', marginBottom: 32 },
+    avatar: {
+      width: 80, height: 80, borderRadius: 40,
+      backgroundColor: t.accent, justifyContent: 'center', alignItems: 'center', marginBottom: 12
+    },
+    avatarText: { color: '#fff', fontSize: 32, fontWeight: '700' },
+    email: { color: t.subtext, fontSize: 14 },
+    card: {
+      backgroundColor: t.card, borderRadius: 12, padding: 16,
+      borderWidth: 1, borderColor: t.cardBorder, marginBottom: 16
+    },
+    cardDivider: { height: 1, backgroundColor: t.divider, marginVertical: 14 },
+    toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    toggleLabel: { color: t.text, fontSize: 15, fontWeight: '600', marginBottom: 4 },
+    toggleSub: { color: t.subtext, fontSize: 13, maxWidth: 220 },
+    sectionTitle: { fontSize: 16, fontWeight: '600', color: t.subtext, marginBottom: 12 },
+    fieldLabel: { color: t.subtext, fontSize: 13, marginBottom: 6, marginTop: 12 },
+    input: {
+      backgroundColor: t.inputBg, borderRadius: 8,
+      padding: 12, fontSize: 15, borderWidth: 1, borderColor: t.inputBorder
+    },
+    textArea: { height: 80, textAlignVertical: 'top' },
+    saveButton: {
+      backgroundColor: t.accent, borderRadius: 12,
+      padding: 16, alignItems: 'center', marginBottom: 12
+    },
+    saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+    signOutButton: {
+      borderRadius: 12, padding: 16, alignItems: 'center',
+      borderWidth: 1, borderColor: t.cardBorder
+    },
+    signOutText: { color: t.danger, fontSize: 16 },
+  })
+}

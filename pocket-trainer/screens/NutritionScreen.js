@@ -5,8 +5,10 @@ import {
 } from 'react-native'
 import axios from 'axios'
 import { API_URL } from '../config/config'
+import { useTheme } from '../context/ThemeContext'
 
 export default function NutritionScreen({ session }) {
+  const { theme } = useTheme()
   const [summary, setSummary] = useState(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -26,10 +28,12 @@ export default function NutritionScreen({ session }) {
     setRefreshing(false)
   }
 
+  const s = makeStyles(theme)
+
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator color="#6C47FF" size="large" />
+      <View style={s.centered}>
+        <ActivityIndicator color={theme.accent} size="large" />
       </View>
     )
   }
@@ -41,61 +45,58 @@ export default function NutritionScreen({ session }) {
   function MacroBar({ label, value, max, color }) {
     const pct = Math.min((value / max) * 100, 100)
     return (
-      <View style={styles.macroRow}>
-        <Text style={styles.macroLabel}>{label}</Text>
-        <View style={styles.macroBarBg}>
-          <View style={[styles.macroBarFill, { width: `${pct}%`, backgroundColor: color }]} />
+      <View style={s.macroRow}>
+        <Text style={s.macroLabel}>{label}</Text>
+        <View style={s.macroBarBg}>
+          <View style={[s.macroBarFill, { width: `${pct}%`, backgroundColor: color }]} />
         </View>
-        <Text style={styles.macroValue}>{Math.round(value || 0)}g</Text>
+        <Text style={s.macroValue}>{Math.round(value || 0)}g</Text>
       </View>
     )
   }
 
   return (
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
+      style={s.container}
+      contentContainerStyle={s.content}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
           onRefresh={() => { setRefreshing(true); loadSummary() }}
-          tintColor="#6C47FF"
+          tintColor={theme.accent}
         />
       }
     >
-      <Text style={styles.heading}>Nutrition</Text>
+      <Text style={s.heading}>Nutrition</Text>
 
-      {/* Today's calories */}
-      <View style={styles.calorieCard}>
-        <Text style={styles.calorieNumber}>{today?.calories || 0}</Text>
-        <Text style={styles.calorieLabel}>calories today</Text>
-        <Text style={styles.mealCount}>{today?.mealCount || 0} meals logged</Text>
+      <View style={s.calorieCard}>
+        <Text style={s.calorieNumber}>{today?.calories || 0}</Text>
+        <Text style={s.calorieLabel}>calories today</Text>
+        <Text style={s.mealCount}>{today?.mealCount || 0} meals logged</Text>
       </View>
 
-      {/* Macros */}
-      <Text style={styles.sectionTitle}>Today's macros</Text>
-      <View style={styles.macroCard}>
-        <MacroBar label="Protein" value={today?.protein || 0} max={200} color="#6C47FF" />
+      <Text style={s.sectionTitle}>Today's macros</Text>
+      <View style={s.macroCard}>
+        <MacroBar label="Protein" value={today?.protein || 0} max={200} color={theme.accent} />
         <MacroBar label="Carbs"   value={today?.carbs   || 0} max={300} color="#FF6B6B" />
         <MacroBar label="Fat"     value={today?.fat     || 0} max={100} color="#FFB347" />
       </View>
 
-      {/* Weekly breakdown */}
-      <Text style={styles.sectionTitle}>This week</Text>
+      <Text style={s.sectionTitle}>This week</Text>
       {days.length === 0 ? (
-        <View style={styles.emptyCard}>
-          <Text style={styles.emptyText}>No meals logged yet.</Text>
-          <Text style={styles.emptySubtext}>Tell your trainer what you're eating in the chat!</Text>
+        <View style={s.emptyCard}>
+          <Text style={s.emptyText}>No meals logged yet.</Text>
+          <Text style={s.emptySubtext}>Tell your trainer what you're eating in the chat!</Text>
         </View>
       ) : (
         days.map(([date, data]) => (
-          <View key={date} style={styles.dayRow}>
-            <Text style={styles.dayLabel}>
+          <View key={date} style={s.dayRow}>
+            <Text style={s.dayLabel}>
               {new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
             </Text>
-            <View style={styles.dayStats}>
-              <Text style={styles.dayCalories}>{Math.round(data.calories)} cal</Text>
-              <Text style={styles.dayMacros}>
+            <View style={s.dayStats}>
+              <Text style={s.dayCalories}>{Math.round(data.calories)} cal</Text>
+              <Text style={s.dayMacros}>
                 P: {Math.round(data.protein)}g  C: {Math.round(data.carbs)}g  F: {Math.round(data.fat)}g
               </Text>
             </View>
@@ -106,40 +107,42 @@ export default function NutritionScreen({ session }) {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
-  content: { padding: 20, paddingBottom: 40 },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' },
-  heading: { fontSize: 28, fontWeight: '700', color: '#fff', marginBottom: 20 },
-  calorieCard: {
-    backgroundColor: '#111', borderRadius: 16, padding: 24,
-    alignItems: 'center', marginBottom: 24, borderWidth: 1, borderColor: '#222'
-  },
-  calorieNumber: { fontSize: 56, fontWeight: '700', color: '#6C47FF' },
-  calorieLabel: { fontSize: 16, color: '#888', marginTop: 4 },
-  mealCount: { fontSize: 13, color: '#555', marginTop: 8 },
-  sectionTitle: { fontSize: 16, fontWeight: '600', color: '#888', marginBottom: 12, marginTop: 8 },
-  macroCard: {
-    backgroundColor: '#111', borderRadius: 12, padding: 16,
-    borderWidth: 1, borderColor: '#222', marginBottom: 24, gap: 16
-  },
-  macroRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  macroLabel: { color: '#888', fontSize: 13, width: 50 },
-  macroBarBg: { flex: 1, height: 6, backgroundColor: '#222', borderRadius: 3, overflow: 'hidden' },
-  macroBarFill: { height: '100%', borderRadius: 3 },
-  macroValue: { color: '#fff', fontSize: 13, width: 40, textAlign: 'right' },
-  emptyCard: {
-    backgroundColor: '#111', borderRadius: 12, padding: 20,
-    borderWidth: 1, borderColor: '#222'
-  },
-  emptyText: { color: '#fff', fontSize: 15, marginBottom: 4 },
-  emptySubtext: { color: '#888', fontSize: 13 },
-  dayRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#111'
-  },
-  dayLabel: { color: '#fff', fontSize: 14, fontWeight: '500' },
-  dayStats: { alignItems: 'flex-end' },
-  dayCalories: { color: '#6C47FF', fontSize: 14, fontWeight: '600' },
-  dayMacros: { color: '#555', fontSize: 12, marginTop: 2 }
-})
+function makeStyles(t) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: t.bg },
+    content: { padding: 20, paddingBottom: 40 },
+    centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: t.bg },
+    heading: { fontSize: 28, fontWeight: '700', color: t.text, marginBottom: 20 },
+    calorieCard: {
+      backgroundColor: t.card, borderRadius: 16, padding: 24,
+      alignItems: 'center', marginBottom: 24, borderWidth: 1, borderColor: t.cardBorder
+    },
+    calorieNumber: { fontSize: 56, fontWeight: '700', color: t.accent },
+    calorieLabel: { fontSize: 16, color: t.subtext, marginTop: 4 },
+    mealCount: { fontSize: 13, color: t.muted, marginTop: 8 },
+    sectionTitle: { fontSize: 16, fontWeight: '600', color: t.subtext, marginBottom: 12, marginTop: 8 },
+    macroCard: {
+      backgroundColor: t.card, borderRadius: 12, padding: 16,
+      borderWidth: 1, borderColor: t.cardBorder, marginBottom: 24, gap: 16
+    },
+    macroRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    macroLabel: { color: t.subtext, fontSize: 13, width: 50 },
+    macroBarBg: { flex: 1, height: 6, backgroundColor: t.macroBg, borderRadius: 3, overflow: 'hidden' },
+    macroBarFill: { height: '100%', borderRadius: 3 },
+    macroValue: { color: t.text, fontSize: 13, width: 40, textAlign: 'right' },
+    emptyCard: {
+      backgroundColor: t.card, borderRadius: 12, padding: 20,
+      borderWidth: 1, borderColor: t.cardBorder
+    },
+    emptyText: { color: t.text, fontSize: 15, marginBottom: 4 },
+    emptySubtext: { color: t.subtext, fontSize: 13 },
+    dayRow: {
+      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+      paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: t.divider
+    },
+    dayLabel: { color: t.text, fontSize: 14, fontWeight: '500' },
+    dayStats: { alignItems: 'flex-end' },
+    dayCalories: { color: t.accent, fontSize: 14, fontWeight: '600' },
+    dayMacros: { color: t.muted, fontSize: 12, marginTop: 2 },
+  })
+}
