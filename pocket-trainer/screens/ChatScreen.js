@@ -1,9 +1,42 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, createElement } from 'react'
 import {
   View, Text, TextInput, TouchableOpacity, FlatList,
   ScrollView, StyleSheet, KeyboardAvoidingView,
   Platform, ActivityIndicator, Alert
 } from 'react-native'
+
+// On web, use a real <textarea> so the cursor shows reliably
+function NativeInput({ value, onChangeText, onFocus, onBlur, onSubmit, placeholder, color, fontSize, maxHeight }) {
+  if (Platform.OS !== 'web') return null
+  return createElement('textarea', {
+    value,
+    placeholder,
+    onChange: e => onChangeText(e.target.value),
+    onFocus,
+    onBlur,
+    onKeyDown: e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSubmit() }
+    },
+    rows: 1,
+    style: {
+      flex: 1,
+      border: 'none',
+      outline: 'none',
+      resize: 'none',
+      background: 'transparent',
+      color: color || '#111',
+      fontSize: fontSize || 15,
+      fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif',
+      lineHeight: '1.5',
+      caretColor: '#6C47FF',
+      cursor: 'text',
+      padding: '4px 0',
+      maxHeight: maxHeight || 120,
+      overflowY: 'auto',
+      alignSelf: 'center',
+    }
+  })
+}
 import axios from 'axios'
 import { API_URL } from '../config/config'
 import { useTheme } from '../context/ThemeContext'
@@ -31,6 +64,7 @@ export default function ChatScreen({ session }) {
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [displayName, setDisplayName] = useState('')
+  const [inputFocused, setInputFocused] = useState(false)
   const flatListRef = useRef(null)
 
   useEffect(() => { init() }, [])
@@ -180,17 +214,33 @@ export default function ChatScreen({ session }) {
           </View>
         )}
 
-        <View style={s.inputRow}>
-          <TextInput
-            style={s.input}
-            placeholder="Message your trainer..."
-            placeholderTextColor={theme.placeholder}
-            value={input}
-            onChangeText={setInput}
-            multiline
-            maxLength={1000}
-            onSubmitEditing={sendMessage}
-          />
+        <View style={[s.inputRow, inputFocused && s.inputRowFocused]}>
+          {Platform.OS === 'web' ? (
+            <NativeInput
+              value={input}
+              onChangeText={setInput}
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
+              onSubmit={sendMessage}
+              placeholder="Message your trainer..."
+              color={theme.text}
+              fontSize={15}
+            />
+          ) : (
+            <TextInput
+              style={s.input}
+              placeholder="Message your trainer..."
+              placeholderTextColor={theme.placeholder}
+              selectionColor={theme.accent}
+              value={input}
+              onChangeText={setInput}
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
+              multiline
+              maxLength={1000}
+              onSubmitEditing={sendMessage}
+            />
+          )}
           <TouchableOpacity
             style={[s.sendBtn, (!input.trim() || sending) && s.sendDisabled]}
             onPress={sendMessage}
@@ -233,17 +283,33 @@ export default function ChatScreen({ session }) {
               ? "Pocket Trainer is your AI-powered personal fitness coach. Describe your workouts, meals, and body stats in plain language and your trainer will log them automatically. Share your goals, ask for training or meal plans, or check in on your progress anytime."
               : "What would you like to work on today?"}
           </Text>
-          <View style={s.homeInputRow}>
-            <TextInput
-              style={s.homeInput}
-              placeholder={conversations.length === 0 ? "Start chatting with your trainer..." : "Start a new chat..."}
-              placeholderTextColor={theme.placeholder}
-              value={input}
-              onChangeText={setInput}
-              multiline
-              maxLength={1000}
-              onSubmitEditing={sendMessage}
-            />
+          <View style={[s.homeInputRow, inputFocused && s.homeInputRowFocused]}>
+            {Platform.OS === 'web' ? (
+              <NativeInput
+                value={input}
+                onChangeText={setInput}
+                onFocus={() => setInputFocused(true)}
+                onBlur={() => setInputFocused(false)}
+                onSubmit={sendMessage}
+                placeholder={conversations.length === 0 ? "Start chatting with your trainer..." : "Start a new chat..."}
+                color={theme.text}
+                fontSize={16}
+              />
+            ) : (
+              <TextInput
+                style={s.homeInput}
+                placeholder={conversations.length === 0 ? "Start chatting with your trainer..." : "Start a new chat..."}
+                placeholderTextColor={theme.placeholder}
+                selectionColor={theme.accent}
+                value={input}
+                onChangeText={setInput}
+                onFocus={() => setInputFocused(true)}
+                onBlur={() => setInputFocused(false)}
+                multiline
+                maxLength={1000}
+                onSubmitEditing={sendMessage}
+              />
+            )}
             <TouchableOpacity
               style={[s.sendBtn, (!input.trim() || sending) && s.sendDisabled]}
               onPress={sendMessage}
@@ -283,13 +349,14 @@ function makeStyles(t) {
     homeInputRow: {
       flexDirection: 'row', gap: 8, alignItems: 'flex-end',
       width: '100%',
-      backgroundColor: t.inputBg, borderRadius: 16,
-      borderWidth: 1, borderColor: t.inputBorder,
-      paddingHorizontal: 16, paddingVertical: 8,
+      borderBottomWidth: 1.5, borderBottomColor: t.divider,
+      paddingBottom: 8,
     },
+    homeInputRowFocused: { borderBottomColor: t.accent },
     homeInput: {
-      flex: 1, color: t.text, fontSize: 15,
+      flex: 1, color: t.text, fontSize: 16,
       maxHeight: 120, paddingVertical: 4,
+      backgroundColor: 'transparent',
     },
 
     // Chat view
@@ -322,13 +389,14 @@ function makeStyles(t) {
     },
     typingText: { color: t.muted, fontSize: 13 },
     inputRow: {
-      flexDirection: 'row', padding: 12, gap: 8,
+      flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 12, gap: 8,
       borderTopWidth: 1, borderTopColor: t.divider, alignItems: 'flex-end',
     },
+    inputRowFocused: { borderTopColor: t.accent },
     input: {
-      flex: 1, backgroundColor: t.inputBg, color: t.text, borderRadius: 20,
-      paddingHorizontal: 16, paddingVertical: 10, fontSize: 15,
-      borderWidth: 1, borderColor: t.inputBorder, maxHeight: 120,
+      flex: 1, backgroundColor: 'transparent', color: t.text,
+      paddingHorizontal: 8, paddingVertical: 10, fontSize: 15,
+      maxHeight: 120,
     },
     sendBtn: {
       width: 40, height: 40, borderRadius: 20,
