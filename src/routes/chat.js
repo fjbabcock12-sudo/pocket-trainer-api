@@ -133,14 +133,12 @@ router.post('/', requireAuth, async (req, res) => {
     ]
 
     // 4. Call Claude
-    console.log('Calling Anthropic, key prefix:', process.env.ANTHROPIC_API_KEY?.slice(0, 15))
     const response = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 1024,
       system: systemPrompt,
       messages,
     })
-    console.log('Anthropic response received')
 
     const rawResponse = response.content[0].text
 
@@ -172,7 +170,7 @@ router.post('/', requireAuth, async (req, res) => {
       logged: loggedType ? { type: loggedType, id: loggedId } : null,
     })
   } catch (err) {
-    console.error('Chat error:', err.message, '| type:', err.constructor?.name, '| status:', err.status, '| cause:', err.cause?.message)
+    console.error('Chat error:', err.message)
     return res.status(500).json({ error: 'Something went wrong. Please try again.' })
   }
 })

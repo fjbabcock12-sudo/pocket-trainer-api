@@ -16,20 +16,6 @@ app.use(express.json({ limit: '10mb' })) // 10mb for photo uploads
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok' }))
 
-// Anthropic connectivity test
-app.get('/test-anthropic', async (req, res) => {
-  try {
-    const anthropic = require('./lib/anthropic')
-    const r = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 10,
-      messages: [{ role: 'user', content: 'hi' }],
-    })
-    res.json({ ok: true, text: r.content[0].text })
-  } catch (err) {
-    res.json({ ok: false, message: err.message, type: err.constructor?.name, cause: err.cause?.message })
-  }
-})
 
 // Routes
 app.use('/api/chat',      chatRoutes)
