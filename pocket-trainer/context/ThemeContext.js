@@ -1,4 +1,18 @@
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useState, useEffect } from 'react'
+import { Platform } from 'react-native'
+
+function loadTheme() {
+  if (Platform.OS === 'web') {
+    try { return localStorage.getItem('theme') === 'dark' } catch {}
+  }
+  return false
+}
+
+function saveTheme(isDark) {
+  if (Platform.OS === 'web') {
+    try { localStorage.setItem('theme', isDark ? 'dark' : 'light') } catch {}
+  }
+}
 
 export const light = {
   dark: false,
@@ -51,9 +65,17 @@ export const dark = {
 const ThemeContext = createContext({ theme: light, toggleTheme: () => {} })
 
 export function ThemeProvider({ children }) {
-  const [isDark, setIsDark] = useState(false)
+  const [isDark, setIsDark] = useState(loadTheme)
+
+  function toggleTheme() {
+    setIsDark(p => {
+      saveTheme(!p)
+      return !p
+    })
+  }
+
   return (
-    <ThemeContext.Provider value={{ theme: isDark ? dark : light, toggleTheme: () => setIsDark(p => !p) }}>
+    <ThemeContext.Provider value={{ theme: isDark ? dark : light, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   )
