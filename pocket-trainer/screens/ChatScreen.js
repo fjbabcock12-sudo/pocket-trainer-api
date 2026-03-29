@@ -28,7 +28,7 @@ function NativeInput({ value, onChangeText, onFocus, onBlur, onSubmit, placehold
       fontSize: fontSize || 15,
       fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif',
       lineHeight: '1.5',
-      caretColor: '#6C47FF',
+      caretColor: '#999999',
       cursor: 'text',
       padding: '4px 0',
       maxHeight: maxHeight || 120,
@@ -349,10 +349,12 @@ function makeStyles(t) {
     homeInputRow: {
       flexDirection: 'row', gap: 8, alignItems: 'flex-end',
       width: '100%',
-      borderBottomWidth: 1.5, borderBottomColor: t.divider,
-      paddingBottom: 8,
+      backgroundColor: t.card,
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
     },
-    homeInputRowFocused: { borderBottomColor: t.accent },
+    homeInputRowFocused: {},
     homeInput: {
       flex: 1, color: t.text, fontSize: 16,
       maxHeight: 120, paddingVertical: 4,
@@ -392,7 +394,7 @@ function makeStyles(t) {
       flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 12, gap: 8,
       borderTopWidth: 1, borderTopColor: t.divider, alignItems: 'flex-end',
     },
-    inputRowFocused: { borderTopColor: t.accent },
+    inputRowFocused: {},
     input: {
       flex: 1, backgroundColor: 'transparent', color: t.text,
       paddingHorizontal: 8, paddingVertical: 10, fontSize: 15,
