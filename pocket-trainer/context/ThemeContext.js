@@ -1,17 +1,11 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
-import { Platform } from 'react-native'
+import React, { createContext, useContext, useState } from 'react'
 
 function loadTheme() {
-  if (Platform.OS === 'web') {
-    try { return localStorage.getItem('theme') === 'dark' } catch {}
-  }
-  return false
+  try { return window.localStorage.getItem('pt_theme') === 'dark' } catch { return false }
 }
 
 function saveTheme(isDark) {
-  if (Platform.OS === 'web') {
-    try { localStorage.setItem('theme', isDark ? 'dark' : 'light') } catch {}
-  }
+  try { window.localStorage.setItem('pt_theme', isDark ? 'dark' : 'light') } catch {}
 }
 
 export const light = {
